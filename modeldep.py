@@ -5,7 +5,7 @@ from sagemaker.huggingface.model import HuggingFaceModel
 sagemaker_session = sagemaker.Session()
 
 # IAM role that SageMaker can assume to access S3
-role = "arn:aws:iam::339713052627:role/service-role/SuperAdmin"
+role = "arn:aws:iam::339713052627:role/mlmodelrole"
 
 # Define the S3 path for your model artifacts (config.json, model.safetensors, optimizer.pt in .tar.gz)
 model_s3_path = "https://mlgabifybucket.s3.amazonaws.com/model.tar.gz"
