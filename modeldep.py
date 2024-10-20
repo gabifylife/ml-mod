@@ -1,38 +1,37 @@
+import torch
 import sagemaker
-from sagemaker.huggingface.model import HuggingFaceModel
+from transformers import Wav2Vec2Processor, Wav2Vec2ForSequenceClassification
 
-# Initialize the SageMaker session
-sagemaker_session = sagemaker.Session()
+# Specify the local paths to the model files
+model_path = "/path-to-your-model/model.safetensors"
+config_path = "/path-to-your-model/config.json"
+optimizer_path = "/path-to-your-model/optimizer.pt"
 
-# IAM role that SageMaker can assume to access S3
-role = "arn:aws:iam::339713052627:role/mlmodelrole"
+# Use Hugging Face's pre-built processor (pre-trained tokenizer and feature extractor)
+processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-base-960h")
 
-# Define the S3 path for your model artifacts (config.json, model.safetensors, optimizer.pt in .tar.gz)
-model_s3_path = "https://mlgabifybucket.s3.amazonaws.com/model.tar.gz"
+# Load your locally saved model weights and config
+model = Wav2Vec2ForSequenceClassification.from_pretrained(config_path)
+state_dict = torch.load(model_path)  # Load the model's weights (safetensors)
+model.load_state_dict(state_dict)
 
-# Define the Hugging Face model configuration (using the pre-trained processor)
-huggingface_model = HuggingFaceModel(
-    model_data=model_s3_path,  # Path to your model artifacts
-    role=role,
-    transformers_version="4.6",  # Version of Hugging Face Transformers
-    pytorch_version="1.7",       # PyTorch version
-    py_version="py36"            # Python version
-)
+# Load optimizer if needed
+optimizer = torch.load(optimizer_path)
 
-# Deploy the model as an endpoint
-predictor = huggingface_model.deploy(
-    initial_instance_count=1,          # Number of instances
-    instance_type="ml.m5.large"        # Type of EC2 instance
-)
-print("running")
+# Now you can deploy the model or make predictions as required
+def predict(input_data):
+    # Prepare input using the processor
+    inputs = processor(input_data, return_tensors="pt", padding=True, sampling_rate=16000)
 
-# Sample input data (use appropriate input format for your model)
-data = {
-    "inputs": "This is a sample input text for Hugging Face model deployment."  # Example text input
-}
+    # Run the model and get predictions
+    with torch.no_grad():
+        logits = model(**inputs).logits
 
-# Use the deployed endpoint to get predictions
-result = predictor.predict(data)
+    # Assuming binary classification, apply sigmoid and get probabilities
+    preds = torch.sigmoid(logits)
+    return preds
 
-# Print the result
-print(result)
+# Sample input data (for test or actual prediction)
+input_data = "Sample audio data or input data to process."
+predictions = predict(input_data)
+print(f"Predictions: {predictions}")
