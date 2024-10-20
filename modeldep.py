@@ -1,18 +1,19 @@
 import torch
-import sagemaker
 from transformers import Wav2Vec2Processor, Wav2Vec2ForSequenceClassification
 
 # Specify the local paths to the model files
-model_path = "/path-to-your-model/model.safetensors"
+model_weights_path = "/path-to-your-model/model.safetensors"
 config_path = "/path-to-your-model/config.json"
 optimizer_path = "/path-to-your-model/optimizer.pt"
 
 # Use Hugging Face's pre-built processor (pre-trained tokenizer and feature extractor)
 processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-base-960h")
 
-# Load your locally saved model weights and config
+# Load model configuration from the config.json
 model = Wav2Vec2ForSequenceClassification.from_pretrained(config_path)
-state_dict = torch.load(model_path)  # Load the model's weights (safetensors)
+
+# Load model weights from model.safetensors
+state_dict = torch.load(model_weights_path, map_location=torch.device('cpu'))  # You can use map_location as needed
 model.load_state_dict(state_dict)
 
 # Load optimizer if needed
